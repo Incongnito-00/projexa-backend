@@ -13,6 +13,13 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 router.post("/register", async (req, res) => {
   try {
+
+    console.log("================================");
+    console.log("REGISTER REQUEST RECEIVED");
+    console.log("HEADERS:", req.headers);
+    console.log("BODY:", req.body);
+    console.log("================================");
+
     const { name, email, password, role } = req.body;
 
     if (!name || !email || !password) {
@@ -52,16 +59,21 @@ router.post("/register", async (req, res) => {
         role: user.role,
       },
       JWT_SECRET,
-      { expiresIn: "7d" }
+      {
+        expiresIn: "7d",
+      }
     );
 
-    res.json({
+    res.status(201).json({
       success: true,
+      message: "Registration Successful",
       token,
       user,
     });
+
   } catch (err) {
-    console.error(err);
+    console.error("REGISTER ERROR:", err);
+
     res.status(500).json({
       success: false,
       message: "Server Error",
@@ -73,7 +85,17 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
+
+    console.log("LOGIN BODY:", req.body);
+
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and Password are required",
+      });
+    }
 
     const result = await db.query(
       "SELECT * FROM users WHERE email=$1",
@@ -96,9 +118,9 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const ok = await bcrypt.compare(password, user.password);
+    const valid = await bcrypt.compare(password, user.password);
 
-    if (!ok) {
+    if (!valid) {
       return res.status(401).json({
         success: false,
         message: "Invalid Password",
@@ -112,11 +134,14 @@ router.post("/login", async (req, res) => {
         role: user.role,
       },
       JWT_SECRET,
-      { expiresIn: "7d" }
+      {
+        expiresIn: "7d",
+      }
     );
 
     res.json({
       success: true,
+      message: "Login Successful",
       token,
       user: {
         id: user.id,
@@ -126,8 +151,10 @@ router.post("/login", async (req, res) => {
         profile_image: user.profile_image,
       },
     });
+
   } catch (err) {
-    console.error(err);
+    console.error("LOGIN ERROR:", err);
+
     res.status(500).json({
       success: false,
       message: "Server Error",
@@ -139,6 +166,7 @@ router.post("/login", async (req, res) => {
 
 router.post("/google", async (req, res) => {
   try {
+
     const { token } = req.body;
 
     const ticket = await client.verifyIdToken({
@@ -161,6 +189,7 @@ router.post("/google", async (req, res) => {
     let user;
 
     if (result.rows.length === 0) {
+
       const inserted = await db.query(
         `INSERT INTO users
         (name,email,google_id,profile_image)
@@ -170,8 +199,11 @@ router.post("/google", async (req, res) => {
       );
 
       user = inserted.rows[0];
+
     } else {
+
       user = result.rows[0];
+
     }
 
     const jwtToken = jwt.sign(
@@ -181,7 +213,9 @@ router.post("/google", async (req, res) => {
         role: user.role,
       },
       JWT_SECRET,
-      { expiresIn: "7d" }
+      {
+        expiresIn: "7d",
+      }
     );
 
     res.json({
@@ -189,12 +223,16 @@ router.post("/google", async (req, res) => {
       token: jwtToken,
       user,
     });
+
   } catch (err) {
-    console.error(err);
+
+    console.error("GOOGLE LOGIN ERROR:", err);
+
     res.status(401).json({
       success: false,
       message: "Google Authentication Failed",
     });
+
   }
 });
 
