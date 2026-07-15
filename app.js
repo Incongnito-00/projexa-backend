@@ -1,105 +1,122 @@
 require("dotenv").config();
+require("./config/database");
 
 const express = require("express");
 const cors = require("cors");
-
-require("./database");
-
-const authRoutes = require("./routes/auth");
-const projectRoutes = require("./routes/projects");
-const applicationRoutes = require("./routes/applications");
+const helmet = require("helmet");
+const morgan = require("morgan");
+const rateLimit = require("express-rate-limit");
 
 const app = express();
 
-// =======================
-// Middleware
-// =======================
+// ==============================
+// Security
+// ==============================
+
+app.use(helmet());
+
+// ==============================
+// CORS
+// ==============================
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5500",
-      "http://127.0.0.1:5500",
-      "http://localhost:3000",
-      process.env.FRONTEND_URL,
-    ],
+    origin: process.env.CLIENT_URL || "*",
     credentials: true,
   })
 );
 
-app.use(express.json());
+// ==============================
+// Body Parser
+// ==============================
+
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// =======================
-// Home
-// =======================
+// ==============================
+// Logger
+// ==============================
+
+app.use(morgan("dev"));
+
+// ==============================
+// Rate Limiter
+// ==============================
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 Minutes
+  max: 200,
+  message: {
+    success: false,
+    message: "Too many requests. Please try again later.",
+  },
+});
+
+app.use("/api", limiter);
+
+// ==============================
+// Health Route
+// ==============================
 
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    project: "Projexa V2 Backend",
-    version: "2.0",
-    status: "Running 🚀",
+    project: "Projexa V4",
+    version: "4.0.0",
+    status: "Running",
   });
 });
-
-// =======================
-// Health Check
-// =======================
 
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
-    database: "Connected",
-    server: "Running",
+    database: "Checking...",
     uptime: process.uptime(),
+    timestamp: new Date(),
   });
 });
 
-// =======================
-// Routes
-// =======================
+// ==============================
+// API Routes
+// ==============================
 
-app.use("/api/auth", authRoutes);
-app.use("/api/projects", projectRoutes);
-app.use("/api/applications", applicationRoutes);
+app.use("/api/auth", require("./routes/auth.routes"));
+app.use("/api/users", require("./routes/user.routes"));
+app.use("/api/projects", require("./routes/project.routes"));
 
-// =======================
-// 404
-// =======================
+// ==============================
+// 404 Handler
+// ==============================
 
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: "Route Not Found",
+    message: "Route not found",
   });
 });
 
-// =======================
-// Error Handler
-// =======================
+// ==============================
+// Global Error Handler
+// ==============================
 
 app.use((err, req, res, next) => {
   console.error(err);
 
-  res.status(500).json({
+  res.status(err.status || 500).json({
     success: false,
-    message: "Internal Server Error",
+    message: err.message || "Internal Server Error",
   });
 });
 
-// =======================
-// Start Server
-// =======================
+// ==============================
+// Server
+// ==============================
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log("==================================");
-  console.log("🚀 PROJEXA V2 BACKEND STARTED");
+  console.log("=================================");
+  console.log("🚀 Projexa V4 Server Started");
   console.log(`🌐 http://localhost:${PORT}`);
-  console.log("✅ PostgreSQL");
-  console.log("✅ JWT");
-  console.log("✅ Google Login");
-  console.log("==================================");
+  console.log("=================================");
 });

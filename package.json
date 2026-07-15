@@ -1,34 +1,38 @@
 {
-  "name": "projexa-v2-backend",
-  "version": "2.0.0",
-  "description": "Projexa V2 Backend",
+  "name": "projexa-server",
+  "version": "4.0.0",
+  "description": "Projexa V4 Backend API",
   "main": "app.js",
+  "type": "commonjs",
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js"
   },
   "keywords": [
     "projexa",
+    "startup",
+    "students",
+    "projects",
+    "node",
     "express",
-    "postgresql",
-    "jwt",
-    "google-login"
+    "postgresql"
   ],
-  "author": "Sankar",
+  "author": "Projexa",
   "license": "MIT",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.1",
+    "dotenv": "^17.2.2",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
     "google-auth-library": "^10.3.0",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.16.3"
+    "morgan": "^1.10.1",
+    "pg": "^8.16.3",
+    "validator": "^13.15.15"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
-  },
-  "engines": {
-    "node": ">=20"
   }
 }
