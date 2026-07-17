@@ -19,12 +19,34 @@ app.use(helmet());
 // CORS
 // ==============================
 
+const allowedOrigins = [
+  "http://localhost:5500",
+  "http://127.0.0.1:5500",
+  "https://incongnito-00.github.io"
+];
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "*",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (Postman, curl, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// Handle preflight requests
+app.options("*", cors());
 
 // ==============================
 // Body Parser
@@ -44,7 +66,7 @@ app.use(morgan("dev"));
 // ==============================
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 Minutes
+  windowMs: 15 * 60 * 1000,
   max: 200,
   message: {
     success: false,
@@ -55,7 +77,7 @@ const limiter = rateLimit({
 app.use("/api", limiter);
 
 // ==============================
-// Health Route
+// Health Routes
 // ==============================
 
 app.get("/", (req, res) => {
@@ -117,6 +139,6 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log("=================================");
   console.log("🚀 Projexa V4 Server Started");
-  console.log(`🌐 http://localhost:${PORT}`);
+  console.log(`🌐 Running on Port ${PORT}`);
   console.log("=================================");
 });
