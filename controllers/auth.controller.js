@@ -19,14 +19,16 @@ const register = async (req, res) => {
 
         let {
             full_name,
+            fullname,
+            name,
             email,
             password
         } = req.body;
 
-        // ============================================
-        // Required Fields
-        // ============================================
+        // Accept multiple frontend field names
+        full_name = full_name || fullname || name;
 
+        // Required Fields
         if (!full_name || !email || !password) {
 
             return res.status(400).json({
@@ -36,17 +38,11 @@ const register = async (req, res) => {
 
         }
 
-        // ============================================
         // Normalize Input
-        // ============================================
-
         full_name = full_name.trim();
         email = email.trim().toLowerCase();
 
-        // ============================================
-        // Full Name Validation
-        // ============================================
-
+        // Name Validation
         if (full_name.length < 3) {
 
             return res.status(400).json({
@@ -56,25 +52,19 @@ const register = async (req, res) => {
 
         }
 
-        // ============================================
         // Email Validation
-        // ============================================
-
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         if (!emailRegex.test(email)) {
 
             return res.status(400).json({
                 success: false,
-                message: "Please enter a valid email address."
+                message: "Please enter a valid email."
             });
 
         }
 
-        // ============================================
         // Password Validation
-        // ============================================
-
         const passwordRegex =
             /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&^#])[A-Za-z\d@$!%*?&^#]{8,}$/;
 
@@ -83,15 +73,12 @@ const register = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message:
-                    "Password must be at least 8 characters and contain uppercase, lowercase, number and special character."
+                    "Password must contain uppercase, lowercase, number and special character."
             });
 
         }
 
-        // ============================================
         // Check Existing User
-        // ============================================
-
         const existingUser = await findUserByEmail(email);
 
         if (existingUser) {
@@ -103,16 +90,10 @@ const register = async (req, res) => {
 
         }
 
-        // ============================================
         // Hash Password
-        // ============================================
-
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // ============================================
         // Create User
-        // ============================================
-
         const newUser = await createUser({
 
             full_name,
@@ -129,10 +110,7 @@ const register = async (req, res) => {
 
         });
 
-        // ============================================
         // Generate JWT
-        // ============================================
-
         const token = generateToken(newUser);
 
         return res.status(201).json({
@@ -171,7 +149,7 @@ const register = async (req, res) => {
 
             success: false,
 
-            message: "Internal Server Error"
+            message: error.message || "Internal Server Error"
 
         });
 
@@ -209,10 +187,6 @@ const login = async (req, res) => {
 
         email = email.trim().toLowerCase();
 
-        // ============================================
-        // Find User
-        // ============================================
-
         const user = await findUserByEmail(email);
 
         if (!user) {
@@ -226,10 +200,6 @@ const login = async (req, res) => {
             });
 
         }
-
-        // ============================================
-        // Verify Password
-        // ============================================
 
         const isMatch = await bcrypt.compare(
 
@@ -250,10 +220,6 @@ const login = async (req, res) => {
             });
 
         }
-
-        // ============================================
-        // Generate JWT
-        // ============================================
 
         const token = generateToken(user);
 
@@ -293,7 +259,7 @@ const login = async (req, res) => {
 
             success: false,
 
-            message: "Internal Server Error"
+            message: error.message || "Internal Server Error"
 
         });
 
