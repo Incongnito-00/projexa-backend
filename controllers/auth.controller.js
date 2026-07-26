@@ -17,13 +17,15 @@ const register = async (req, res) => {
 
     try {
 
-        const {
+        let {
             full_name,
             email,
             password
         } = req.body;
 
-        // Validation
+        // ============================================
+        // Required Fields
+        // ============================================
 
         if (!full_name || !email || !password) {
 
@@ -34,7 +36,61 @@ const register = async (req, res) => {
 
         }
 
+        // ============================================
+        // Normalize Input
+        // ============================================
+
+        full_name = full_name.trim();
+        email = email.trim().toLowerCase();
+
+        // ============================================
+        // Full Name Validation
+        // ============================================
+
+        if (full_name.length < 3) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Full name must contain at least 3 characters."
+            });
+
+        }
+
+        // ============================================
+        // Email Validation
+        // ============================================
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(email)) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Please enter a valid email address."
+            });
+
+        }
+
+        // ============================================
+        // Password Validation
+        // ============================================
+
+        const passwordRegex =
+            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&^#])[A-Za-z\d@$!%*?&^#]{8,}$/;
+
+        if (!passwordRegex.test(password)) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Password must be at least 8 characters and contain uppercase, lowercase, number and special character."
+            });
+
+        }
+
+        // ============================================
         // Check Existing User
+        // ============================================
 
         const existingUser = await findUserByEmail(email);
 
@@ -47,11 +103,15 @@ const register = async (req, res) => {
 
         }
 
+        // ============================================
         // Hash Password
+        // ============================================
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // ============================================
         // Create User
+        // ============================================
 
         const newUser = await createUser({
 
@@ -69,7 +129,9 @@ const register = async (req, res) => {
 
         });
 
-        // JWT
+        // ============================================
+        // Generate JWT
+        // ============================================
 
         const token = generateToken(newUser);
 
@@ -81,7 +143,21 @@ const register = async (req, res) => {
 
             token,
 
-            user: newUser
+            user: {
+
+                id: newUser.id,
+
+                full_name: newUser.full_name,
+
+                email: newUser.email,
+
+                avatar: newUser.avatar,
+
+                role: newUser.role,
+
+                is_verified: newUser.is_verified
+
+            }
 
         });
 
@@ -111,7 +187,7 @@ const login = async (req, res) => {
 
     try {
 
-        const {
+        let {
 
             email,
 
@@ -131,6 +207,12 @@ const login = async (req, res) => {
 
         }
 
+        email = email.trim().toLowerCase();
+
+        // ============================================
+        // Find User
+        // ============================================
+
         const user = await findUserByEmail(email);
 
         if (!user) {
@@ -144,6 +226,10 @@ const login = async (req, res) => {
             });
 
         }
+
+        // ============================================
+        // Verify Password
+        // ============================================
 
         const isMatch = await bcrypt.compare(
 
@@ -165,9 +251,13 @@ const login = async (req, res) => {
 
         }
 
+        // ============================================
+        // Generate JWT
+        // ============================================
+
         const token = generateToken(user);
 
-        return res.json({
+        return res.status(200).json({
 
             success: true,
 
